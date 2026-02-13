@@ -27,6 +27,7 @@ export interface SimulationResult {
     phase: number;
     frequency: number;
     parameters: Record<string, number>;
+    isValid: boolean;
     createdAt: string;
 }
 
