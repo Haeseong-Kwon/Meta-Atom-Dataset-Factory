@@ -5,7 +5,7 @@ import { Settings2, Download, Database, Check } from 'lucide-react';
 
 export default function TrainingBridge() {
     const [features, setFeatures] = useState(['radius', 'height']);
-    const [labels, setLabels] = useState(['phase']);
+    const [labels, setLabels] = useState(['phase', 'transmission']);
     const [isExporting, setIsExporting] = useState(false);
 
     const toggleFeature = (f: string) => {
@@ -19,23 +19,31 @@ export default function TrainingBridge() {
     const downloadConfig = () => {
         setIsExporting(true);
         const config = {
-            project: "Meta-Atom-Factory",
-            version: "1.0.0",
+            project: "Meta-Atom-Factory-Surrogate",
+            version: "2.1.0",
             timestamp: new Date().toISOString(),
             training: {
                 features,
                 labels,
                 format: "float32",
-                normalization: "min-max"
+                normalization: "standard-scaler",
+                optimizer_hint: "Adam",
+                loss_function: "MSELoss"
             },
-            source: "/api/v1/training-data"
+            data_bridge: {
+                endpoint: `${window.location.origin}/api/v1/training-data`,
+                params: {
+                    limit: 10000,
+                    include_invalid: false
+                }
+            }
         };
 
         const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'training_config.json';
+        a.download = `training_config_${new Date().getTime()}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -43,6 +51,9 @@ export default function TrainingBridge() {
 
         setTimeout(() => setIsExporting(false), 1500);
     };
+
+    const availableFeatures = ['radius', 'height', 'width', 'gap', 'period', 'frequency'];
+    const availableLabels = ['phase', 'transmission', 'reflection', 'absorption'];
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -59,13 +70,13 @@ export default function TrainingBridge() {
                         <div className="space-y-4">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Available Features (X)</label>
                             <div className="space-y-2">
-                                {['radius', 'height', 'width', 'gap', 'period'].map((f) => (
+                                {availableFeatures.map((f) => (
                                     <button
                                         key={f}
                                         onClick={() => toggleFeature(f)}
                                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${features.includes(f)
-                                                ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
-                                                : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'
+                                            ? 'bg-blue-600/10 border-blue-500/50 text-blue-400'
+                                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'
                                             }`}
                                     >
                                         <span className="capitalize">{f}</span>
@@ -79,13 +90,13 @@ export default function TrainingBridge() {
                         <div className="space-y-4">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Target Labels (Y)</label>
                             <div className="space-y-2">
-                                {['phase', 'transmission', 'reflection', 'absorption'].map((l) => (
+                                {availableLabels.map((l) => (
                                     <button
                                         key={l}
                                         onClick={() => toggleLabel(l)}
                                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${labels.includes(l)
-                                                ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
-                                                : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'
+                                            ? 'bg-emerald-600/10 border-emerald-500/50 text-emerald-400'
+                                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-700'
                                             }`}
                                     >
                                         <span className="capitalize">{l}</span>
@@ -124,28 +135,28 @@ export default function TrainingBridge() {
                             <span className="text-slate-300 font-mono">{labels.length}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                            <span className="text-slate-500">Output Format</span>
-                            <span className="text-slate-300 font-mono">JSON / FLOAT32</span>
+                            <span className="text-slate-500">Data Bridge URL</span>
+                            <span className="text-blue-500 font-mono overflow-hidden text-ellipsis whitespace-nowrap ml-4">/api/v1/training-data</span>
                         </div>
                     </div>
 
                     <button
                         onClick={downloadConfig}
                         disabled={features.length === 0 || labels.length === 0 || isExporting}
-                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-900/20 active:scale-95"
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 active:scale-95"
                     >
                         {isExporting ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
                             <>
                                 <Download size={20} />
-                                Generate config.json
+                                Export Config.json
                             </>
                         )}
                     </button>
 
                     <p className="mt-4 text-[10px] text-center text-slate-600 italic">
-                        This config will bridge the dataset to the surrogate training pipeline.
+                        This configuration bridge enables the surrogate models to dynamically reference the training dataset.
                     </p>
                 </div>
             </div>

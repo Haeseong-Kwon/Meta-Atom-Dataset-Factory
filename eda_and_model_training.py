@@ -8,16 +8,28 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error
 import numpy as np
-from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# Manual .env file parsing function
+def get_env_vars(env_path='.env'):
+    env_vars = {}
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        env_vars[key] = value
+    return env_vars
 
 def load_data_from_supabase():
     """
     Supabase의 meta_atom_dataset 테이블에서 데이터를 불러옵니다.
     """
-    load_dotenv()
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_key = os.environ.get("SUPABASE_KEY")
+    env_vars = get_env_vars(env_path=os.path.join(os.getcwd(), '.env'))
+    supabase_url = env_vars.get("SUPABASE_URL")
+    supabase_key = env_vars.get("SUPABASE_KEY")
 
     if not supabase_url or not supabase_key:
         print("Supabase URL 또는 Key가 .env 파일에 설정되지 않았습니다.")
@@ -47,8 +59,7 @@ def main():
 
     print("### 데이터 샘플 ###")
     print(df.head())
-    print("
-")
+    print()
 
     # 1. 탐색적 데이터 분석 (EDA)
     print("### 1. 탐색적 데이터 분석 (EDA) ###")
@@ -70,8 +81,7 @@ def main():
         plt.grid(True)
         plt.savefig('phase_vs_radius.png')
         print("- 반지름(r1)과 위상(phase)의 관계를 'phase_vs_radius.png' 파일로 저장했습니다.")
-    print("
-")
+    print()
 
     # 2. 데이터 불균형 체크
     print("### 2. 데이터 불균형 체크 ###")
@@ -90,8 +100,7 @@ def main():
         print("- 제안: 위상 데이터가 특정 구간에 편중되어 있을 수 있습니다. 모델 성능 향상을 위해 SMOTE (Synthetic Minority Over-sampling Technique) 같은 오버샘플링 기법을 고려해볼 수 있습니다.")
     else:
         print("- 위상 데이터 분포가 비교적 균일합니다.")
-    print("
-")
+    print()
 
     # 3. 학습 가시성 테스트 (간단한 MLP 모델)
     print("### 3. 학습 가시성 테스트 ###")
@@ -131,7 +140,7 @@ def main():
     y_pred = mlp.predict(X_test_scaled)
     mse = mean_squared_error(y_test, y_pred)
     print(f"- 테스트 데이터에 대한 최종 예측 오차 (MSE): {mse:.4f}")
-    if mlp.loss_curve_[0] > mlp.loss_curve_[-1]:
+    if len(mlp.loss_curve_) > 1 and mlp.loss_curve_[0] > mlp.loss_curve_[-1]:
         print("- 확인: 모델의 예측 오차(Loss)가 학습을 통해 성공적으로 감소했습니다. 데이터에 학습 가능한 패턴이 존재합니다.")
     else:
         print("- 경고: 모델의 예측 오차가 충분히 감소하지 않았습니다. 데이터, 모델 구조, 또는 하이퍼파라미터를 재검토해야 합니다.")

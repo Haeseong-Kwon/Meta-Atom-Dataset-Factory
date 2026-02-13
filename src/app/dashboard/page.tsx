@@ -14,16 +14,41 @@ import {
     Filter,
     PieChart as PieChartIcon,
     LayoutDashboard,
-    Zap
+    Zap,
+    Activity,
+    BrainCircuit
 } from 'lucide-react';
 import DistributionChart from '@/components/dashboard/DistributionChart';
 import InsightPanel from '@/components/analytics/InsightPanel';
 import TrainingBridge from '@/components/factory/TrainingBridge';
+import EfficiencyReport from '@/components/factory/EfficiencyReport';
+import { ActiveLearningManager } from '@/lib/factory/active-learning';
 
-type TabType = 'overview' | 'insights' | 'training';
+type TabType = 'overview' | 'insights' | 'training' | 'performance';
 
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [isALRunning, setIsALRunning] = useState(false);
+    const [alStatus, setAlStatus] = useState<string | null>(null);
+
+    const handleStartAL = async () => {
+        setIsALRunning(true);
+        setAlStatus('Analysing dataset for refinement...');
+
+        try {
+            const result = await ActiveLearningManager.triggerRefinementLoop();
+            if (result.success) {
+                setAlStatus(result.jobsCreated ? `Queued ${result.jobsCreated} refinement jobs.` : 'Dataset is optimal.');
+            }
+        } catch (err) {
+            setAlStatus('Failed to start Active Learning.');
+        } finally {
+            setTimeout(() => {
+                setIsALRunning(false);
+                setAlStatus(null);
+            }, 3000);
+        }
+    };
 
     // Mock data
     const stats = [
@@ -44,31 +69,45 @@ export default function DashboardPage() {
             {/* Header with Navigation */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-semibold text-slate-100">Dataset Factory</h2>
+                    <h2 className="text-2xl font-semibold text-slate-100 flex items-center gap-3">
+                        Dataset Factory
+                        {isALRunning && (
+                            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 animate-pulse">
+                                <BrainCircuit size={10} /> Active Learning ON
+                            </span>
+                        )}
+                    </h2>
                     <p className="text-slate-400 text-sm mt-1">Manage simulation sweeps and AI training pipelines.</p>
                 </div>
 
-                <div className="flex p-1 bg-slate-900 border border-slate-800 rounded-xl">
+                <div className="flex p-1 bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`px-4 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'overview' ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'overview' ? 'bg-slate-800 text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         <LayoutDashboard size={14} />
                         Overview
                     </button>
                     <button
                         onClick={() => setActiveTab('insights')}
-                        className={`px-4 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'insights' ? 'bg-slate-800 text-purple-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'insights' ? 'bg-slate-800 text-purple-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         <PieChartIcon size={14} />
                         Insights
                     </button>
                     <button
                         onClick={() => setActiveTab('training')}
-                        className={`px-4 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 ${activeTab === 'training' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'training' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         <Zap size={14} />
                         Training Bridge
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('performance')}
+                        className={`px-4 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'performance' ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        <Activity size={14} />
+                        Performance
                     </button>
                 </div>
             </div>
@@ -117,17 +156,24 @@ export default function DashboardPage() {
 
                         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
                             <h3 className="font-medium text-slate-200 mb-6 flex items-center gap-2">
-                                <Download size={20} className="text-emerald-400" />
-                                Quick Export
+                                <BrainCircuit size={20} className="text-blue-400" />
+                                Active Learning Master
                             </h3>
                             <div className="space-y-4">
                                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-                                    <div className="text-[10px] text-slate-500 uppercase font-mono">Current Dataset</div>
-                                    <div className="text-sm font-medium text-slate-300">1.2k Valid Samples</div>
+                                    <div className="text-[10px] text-slate-500 uppercase font-mono">Status</div>
+                                    <div className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${isALRunning ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}`} />
+                                        {alStatus || (isALRunning ? 'Active' : 'Standby')}
+                                    </div>
                                 </div>
-                                <a href="/api/export/dataset?format=csv" className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-colors">
-                                    <Download size={14} /> Download Latest CSV
-                                </a>
+                                <button
+                                    onClick={handleStartAL}
+                                    disabled={isALRunning}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all active:scale-95"
+                                >
+                                    <Play size={14} /> Start Autorefinement
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -154,6 +200,12 @@ export default function DashboardPage() {
             {activeTab === 'training' && (
                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <TrainingBridge />
+                </div>
+            )}
+
+            {activeTab === 'performance' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <EfficiencyReport />
                 </div>
             )}
         </div>
