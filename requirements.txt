@@ -1,0 +1,5 @@
+pandas
+h5py
+supabase
+python-dotenv
+numpy
