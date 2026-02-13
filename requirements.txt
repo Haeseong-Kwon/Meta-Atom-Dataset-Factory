@@ -3,3 +3,7 @@ h5py
 supabase
 python-dotenv
 numpy
+seaborn
+matplotlib
+scikit-learn
+torch
