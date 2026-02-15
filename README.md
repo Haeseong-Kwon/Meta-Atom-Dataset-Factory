@@ -1,57 +1,98 @@
-# Meta-Atom Dataset Factory 🚀
+# [Research Report] Meta-Atom Dataset Factory: 대규모 메타-원자 데이터셋 생성 및 자동화 파이프라인 구축 🚀
 
-**An Active Learning Powered Meta-Surface Simulation & Dataset Management Platform**
+## 1. Research Motivation & Necessity
+차세대 메타렌즈(Metalens) 및 홀로그램 장치 설계를 위한 **메타표면 역설계(Metasurface Inverse Design)** 모델의 성능은 학습 데이터셋의 질과 양에 의해 결정된다. 그러나 기존의 메타-원자(Meta-atom) 데이터 확보 방식은 다음과 같은 치명적인 한계를 가진다.
 
-Meta-Atom Dataset Factory는 차세대 메타물질 설계 인프라로, 고성능 시뮬레이션 데이터 수집부터 AI Surrogate 모델 학습을 위한 데이터 정제 및 Active Learning 기반의 자동 최적화 루프를 제공합니다.
+- **Simulation Bottleneck**: 수동으로 파라미터를 입력하고 시뮬레이션 결과를 취합하는 전통적인 방식은 기하급수적으로 증가하는 디자인 공간(Design Space)을 탐색하기에 비효율적이다.
+- **Data Scarcity within High-Gradient Regions**: 무작위 샘플링 기반의 데이터셋은 물리적 응답이 급격히 변하는 영역(High-gradient regions)에서 충분한 밀도를 확보하지 못해 모델의 일반화 성능을 저하시킨다.
 
----
-
-## 🏗️ System Architecture
-
-본 플랫폼은 데이터 생산의 효율성을 높이기 위해 다음과 같은 계층 구조를 가집니다.
-
-- **Simulation Engine**: FDTD/RCWA 기반의 수치해석 엔진과 연동되어 메타 원자의 전자기적 반응(Phase, Transmission)을 계산합니다.
-- **Active Learning Loop**: 데이터 밀도가 낮거나 모델의 불확실성이 높은 영역을 식별하여 자동으로 추가 시뮬레이션 작업을 생성합니다.
-- **Training Bridge**: 수집된 데이터를 AI 모델(Surrogate)이 즉시 학습할 수 있도록 전용 엔드포인트 및 학습 설정 메타데이터를 제공합니다.
-
-## 🌟 Key Features
-
-### 1. Advanced Analytics Dashboard
-- **Correlation Mapping**: `Recharts`를 이용한 파라미터 간 상관관계 시각화.
-- **Sparse Region Detection**: 5x5 그리드 파티셔닝 기반의 데이터 희소 구간 자동 탐지.
-
-### 2. Active Learning & Autorefinement
-- **Uncertainty Estimation**: 데이터 공간의 샘플링 밀도를 분석하여 취약 구간 식별.
-- **Recursive Sweeps**: 식별된 취약 구간에 대해 `simulation_jobs`를 자동 생성하여 데이터셋의 일반화 성능 극대화.
-
-### 3. High-Performance Data Pipeline
-- **Supabase Integration**: 수만 건의 시뮬레이션 데이터에 대해 최적화된 GIN Index 및 복합 인덱스 적용.
-- **Training Bridge**: 모델 입력(X) 및 라벨(Y) 선택 기능과 학습용 `config.json` 익스포트 지원.
-
-## 🛠️ Technology Stack
-
-- **Frontend**: Next.js 14 (App Router), Tailwind CSS, Lucide React
-- **Visualization**: Recharts
-- **Backend / Database**: Supabase (PostgreSQL), Next.js API Routes
-- **Domain Logic**: Active Learning algorithms, Science-based Data Normalization
-
-## 🚀 Getting Started
-
-### Environment Variables
-`.env` 파일에 다음 항목을 설정해야 합니다:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-```
-
-### Installation
-```bash
-npm install
-npm run dev
-```
+본 프로젝트는 이러한 병목 현상을 해결하기 위해 **고객 맞춤형 데이터 생성 자동화 팩토리(Automation Factory)**를 구축했다. 이를 통해 연구자는 수만 건의 고정밀 데이터를 최소한의 인간 개입으로 확보하며, AI Surrogate 모델 학습을 위한 고해상도 물리적 응답 분포를 효율적으로 구축할 수 있다.
 
 ---
 
-## 🔬 Research Context
-본 프로젝트는 'MetaSurface Designer'의 핵심 데이터 엔진으로 설계되었습니다. AI Surrogate 모델의 학습 데이터 확보 비용을 기존 무작위 샘플링 대비 최대 40% 절감하는 것을 목표로 합니다.
+## 2. Data Generation Methodology
+
+본 시스템은 데이터의 정보 획득 효율(Information Gain)을 극대화하기 위해 다음과 같은 고도화된 샘플링 및 시뮬레이션 제어 전략을 채택한다.
+
+### 2.1 Multi-Dimensional Parameter Sampling
+- **Latin Hypercube Sampling (LHS)**: 기하학적 파라미터(Unit-cell Size, Height, Width, Material property) 간의 독립성을 보장하면서도 디자인 공간을 균일하게 커버하기 위한 LHS 전략을 기본으로 사용한다.
+- **Active Learning-based Adaptive Refinement**: 기존 데이터셋의 전자기적 응답 분석을 통해 학습 오차가 높거나 데이터 밀도가 낮은 '희소 구간(Sparse Regions)'을 자동 탐지하며, 해당 영역에 집중적인 추가 시뮬레이션을 배치하는 능동 학습 루프를 지원한다.
+
+### 2.2 Automated Simulation Integration (RCWA/FDTD)
+- Python 기반의 자동화 스크립트(`worker.py`)가 시뮬레이션 엔진(RCWA/FDTD)과 실시간 연동되어 광학적 응답을 추출한다.
+- **Extracted Metrics**: Transmission(투과율), Phase(위상 변이), S-parameters(S-파라미터) 등의 핵심 물리량을 정규화하여 데이터베이스에 적재한다.
+
+---
+
+## 3. System Architecture
+
+대량의 시뮬레이션 데이터를 효율적으로 관리하고 시각화하기 위해 Full-stack 데이터 엔지니어링 아키텍처를 설계했다.
+
+```mermaid
+graph TD
+    subgraph "Data Generation Layer"
+        P[Python Automation Worker] --> S[Simulation Engine: RCWA/FDTD]
+        S --> P
+    end
+
+    subgraph "Infrastructure Layer (Supabase)"
+        P --> DB[(Large-scale Vector DB)]
+        DB --> AL[Active Learning Engine]
+        AL --> P
+    end
+
+    subgraph "User Interface Layer (Next.js 14)"
+        DB --> DASH[Analytics Dashboard]
+        DASH --> V[Recharts Visualization]
+        DB --> TRB[Training Bridge API]
+    end
+
+    TRB --> DL[Deep Learning Models]
+```
+
+- **Large-scale Data Management**: Supabase(PostgreSQL)를 활용하여 수만 개의 메타-원자 데이터를 관리한다. 특히 파라미터 검색 가속화를 위해 복합 인덱스(Composite Index) 및 GIN Index를 적용하여 쿼리 성능을 최적화했다.
+- **QA Dashboard**: Next.js 14 환경에서 `Recharts` 라이브러리를 통해 파라미터 간 상관관계 및 데이터 분포를 시각화하여 생성된 데이터의 무결성을 검증한다.
+
+---
+
+## 4. Key Features & Use-cases
+
+### 4.1 Dataset Diversity Analysis
+단순 데이터 적재를 넘어 생성된 데이터가 학습에 적합한 다양성을 갖추었는지 실시간 분석한다.
+- **Correlation Mapping**: 기하 구조와 위상 변이 간의 비선형적 관계를 산점도(Scatter Plot) 및 히트맵(Heatmap)으로 분석한다.
+- **Anomaly Detection**: 시뮬레이션 중 발생하는 물리적 이상치(Outliers)를 사전에 필터링하여 데이터셋의 신뢰도를 확보한다.
+
+### 4.2 Deep Learning Ready Pipeline
+본 플랫폼에서 생성된 데이터는 전처리 과정 없이 즉시 인공지능 모델 학습에 투입 가능하다.
+- **Training Bridge Service**: CNN/MLP 모델 입력을 위한 데이터 정규화(Normalization), 데이터 증강(Augmentation), 그리고 CSV/JSON 익스포트 기능을 제공한다.
+- **API-based Integration**: Next.js API Routes를 통해 Python PyTorch/TensorFlow 환경에서 데이터셋을 직접 페칭(Fetching)할 수 있는 학습 파이프라인을 구축했다.
+
+---
+
+## 5. Implementation & Setup
+
+### Requirements
+- **Runtime**: Python 3.10+, Node.js 18+
+- **Database**: Supabase Account
+- **Simulation**: RCWA/FDTD Engine access (integrated via Python SDK)
+
+### Quick Start
+1. **Repository Clone & Dependencies**:
+   ```bash
+   git clone https://github.com/haeseong-kwon/meta-atom.git
+   cd meta-atom
+   npm install
+   pip install -r requirements.txt
+   ```
+2. **Environment Configuration**:
+   `.env` 파일에 Supabase 접속 정보를 설정한다.
+3. **Data Generation Start**:
+   ```bash
+   python worker.py  # 시뮬레이션 및 데이터 수집 시작
+   npm run dev       # 분석 대시보드 실행
+   ```
+
+---
+
+**Author**: 권해성 (Hanyang University, Computer Science)
+**Research Interest**: Optical Dataset Engineering, Metasurface Deep Learning, Simulation Automation
