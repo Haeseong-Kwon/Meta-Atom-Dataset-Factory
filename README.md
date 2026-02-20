@@ -1,5 +1,10 @@
 # [Research Report] Meta-Atom Dataset Factory: 대규모 메타-원자 데이터셋 생성 및 자동화 파이프라인 구축 🚀
 
+<div align="center">
+  <img src="dataset_factory_demo.gif" width="85%" />
+  <p>Job Queue 기반의 대규모 시뮬레이션 자동화 및 생성된 데이터셋의 품질 지표(Quality Metrics)를 실시간으로 모니터링하는 통합 대시보드 구동 화면입니다.</p>
+</div>
+
 ## 1. Research Motivation & Necessity
 차세대 메타렌즈(Metalens) 및 홀로그램 장치 설계를 위한 **메타표면 역설계(Metasurface Inverse Design)** 모델의 성능은 학습 데이터셋의 질과 양에 의해 결정된다. 그러나 기존의 메타-원자(Meta-atom) 데이터 확보 방식은 다음과 같은 치명적인 한계를 가진다.
 
